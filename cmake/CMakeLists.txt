@@ -1087,6 +1087,17 @@ if(BUILD_CONVERT)
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
     )
+    if (CITYJSON_SUPPORT)
+        file(GLOB CITYJSON_CONVERT_H_FILES ../src/ifcconvert/cityjson/*.h)
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+            RUNTIME DESTINATION ${BINDIR}
+        )
+        install(FILES ${CITYJSON_CONVERT_H_FILES}
+            DESTINATION ${INCLUDEDIR}/cityjson
+        )
+    endif()
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
