@@ -234,7 +234,7 @@ if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_GLTF)
 endif()
 
-# Add USD support to serializers 
+# Add USD support to serializers
 if(USD_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(USD_INCLUDE_DIR)
     UNIFY_ENVVARS_AND_CACHE(USD_LIBRARY_DIR)
@@ -257,13 +257,13 @@ if(USD_SUPPORT)
     endif()
 
     set(USD_LIBRARIES
-            usd_usd 
+            usd_usd
             usd_usdGeom
-            usd_usdShade 
-            usd_usdLux 
-            usd_vt 
-            usd_sdf 
-            usd_tf 
+            usd_usdShade
+            usd_usdLux
+            usd_vt
+            usd_sdf
+            usd_tf
             usd_gf
         )
 
@@ -452,7 +452,7 @@ if(BUILD_IFCGEOM)
 
     if(OCCT_STATIC)
         find_package(Threads)
-        
+
         if(WASM_BUILD)
             set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
         else()
@@ -464,7 +464,7 @@ if(BUILD_IFCGEOM)
                 set(OPENCASCADE_LIBRARIES -Wl,--start-group ${OPENCASCADE_LIBRARIES} -Wl,--end-group ${CMAKE_THREAD_LIBS_INIT})
             endif()
         endif()
-        
+
         if(NOT APPLE AND NOT WIN32)
             set(OPENCASCADE_LIBRARIES ${OPENCASCADE_LIBRARIES} "rt")
         endif()
@@ -582,7 +582,11 @@ if(HDF5_SUPPORT)
                 set(zlib_post lib)
                 set(lib_ext lib)
             else()
-                set(lib_ext a)
+                if(BUILD_SHARED_LIBS)
+                    set(lib_ext so)
+                else()
+                    set(lib_ext a)
+                endif()
             endif()
 
             if("${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
@@ -850,7 +854,7 @@ if(BUILD_IFCGEOM)
 	if(WASM_BUILD)
 	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 	else()
-	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})	
+	    set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom ${IFCGEOM_SCHEMA_LIBRARIES})
 	endif()
 endif()
 
@@ -864,12 +868,13 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
         foreach(schema ${SCHEMA_VERSIONS})
             set(GEOM_SERIALIZER_SCHEMA_LIBRARIES ${GEOM_SERIALIZER_SCHEMA_LIBRARIES} GeometrySerializers_ifc${schema})
 
-            add_library(geometry_serializer_ifc${schema} STATIC ../src/ifcgeom/Serialization/schema/Serialization.cpp)
+            add_library(geometry_serializer_ifc${schema} ../src/ifcgeom/Serialization/schema/Serialization.cpp)
+            target_link_libraries(geometry_serializer_ifc${schema} ${OPENCASCADE_LIBRARIES})
             set_target_properties(geometry_serializer_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
             list(APPEND geometry_serializer_libraries geometry_serializer_ifc${schema})
         endforeach()
 
-        add_library(geometry_serializer STATIC ../src/ifcgeom/Serialization/Serialization.cpp)
+        add_library(geometry_serializer ../src/ifcgeom/Serialization/Serialization.cpp)
         target_link_libraries(geometry_serializer ${geometry_serializer_libraries})
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} geometry_serializer ${geometry_serializer_libraries})
     endif()
@@ -937,7 +942,7 @@ if(BUILD_IFCGEOM)
         file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
         file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/kernels/${kernel}/*.cpp)
         set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES})
-        
+
         add_library(geometry_kernel_${kernel} ${IFCGEOM_FILES})
         set_property(TARGET geometry_kernel_${kernel} APPEND PROPERTY COMPILE_FLAGS "-DIFC_GEOM_EXPORTS")
         # needed?
@@ -945,7 +950,7 @@ if(BUILD_IFCGEOM)
         # endif()
         target_link_libraries(geometry_kernel_${kernel} ${${KERNEL_UPPER}_LIBRARIES})
         list(APPEND kernel_libraries geometry_kernel_${kernel})
-        
+
         if(${kernel} STREQUAL "cgal")
             set_property(TARGET geometry_kernel_${kernel} APPEND_STRING PROPERTY COMPILE_FLAGS " -DCGAL_HAS_THREADS")
 
@@ -965,8 +970,8 @@ if(BUILD_IFCGEOM)
         file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/mapping/*.h)
         file(GLOB IFCGEOM_CPP_FILES ../src/ifcgeom/mapping/*.cpp)
         set(IFCGEOM_FILES ${IFCGEOM_CPP_FILES} ${IFCGEOM_H_FILES} ${IFCGEOM_I_FILES})
-        
-        add_library(geometry_mapping_ifc${schema} STATIC ${IFCGEOM_FILES})
+
+        add_library(geometry_mapping_ifc${schema} ${IFCGEOM_FILES})
         set_target_properties(geometry_mapping_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
         target_link_libraries(geometry_mapping_ifc${schema} IfcParse)
         list(APPEND mapping_libraries geometry_mapping_ifc${schema})
@@ -1002,9 +1007,8 @@ if(BUILD_CONVERT OR BUILD_IFCPYTHON)
     set(SERIALIZERS_S_FILES ${SERIALIZERS_S_H_FILES} ${SERIALIZERS_S_CPP_FILES})
 
     foreach(schema ${SCHEMA_VERSIONS})
-        add_library(Serializers_ifc${schema} STATIC ${SERIALIZERS_S_FILES})
+        add_library(Serializers_ifc${schema} ${SERIALIZERS_S_FILES})
         set_target_properties(Serializers_ifc${schema} PROPERTIES COMPILE_FLAGS "-DIFC_GEOM_EXPORTS -DIfcSchema=Ifc${schema}")
-        
         if(WASM_BUILD)
             target_link_libraries(Serializers_ifc${schema} ${HDF5_LIBRARIES})
         else()
@@ -1083,6 +1087,17 @@ if(BUILD_CONVERT)
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
     )
+    if (CITYJSON_SUPPORT)
+        file(GLOB CITYJSON_CONVERT_H_FILES ../src/ifcconvert/cityjson/*.h)
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+            RUNTIME DESTINATION ${BINDIR}
+        )
+        install(FILES ${CITYJSON_CONVERT_H_FILES}
+            DESTINATION ${INCLUDEDIR}/cityjson
+        )
+    endif()
 endif(BUILD_CONVERT)
 
 # IfcGeomServer
@@ -1167,7 +1182,7 @@ if(BUILD_IFCMAX)
 endif()
 
 if(WITH_CGAL)
-    add_subdirectory(../src/svgfill svgfill)        
+    add_subdirectory(../src/svgfill svgfill)
 endif()
 
 if(BUILD_QTVIEWER)
